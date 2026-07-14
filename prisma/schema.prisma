@@ -10,9 +10,16 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
+  username  String   @unique
+  pin       String
   name      String
-  role      String
+  role      Role
   createdAt DateTime @default(now())
+}
+
+enum Role {
+  OWNER
+  EMPLOYEE
 }
 
 model Product {
