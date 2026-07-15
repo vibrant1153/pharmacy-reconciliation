@@ -15,6 +15,7 @@ model User {
   name      String
   role      Role
   createdAt DateTime @default(now())
+  sales     Sale[]
 }
 
 enum Role {
@@ -42,6 +43,7 @@ model Batch {
   openedAt        DateTime    @default(now())
   closedAt        DateTime?
   createdAt       DateTime    @default(now())
+  saleItems SaleItem[]
 }
 
 enum BatchStatus {
