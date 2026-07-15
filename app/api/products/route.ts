@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireOwner } from '@/lib/auth'
-
+import { requireOwner, requireAuth } from '@/lib/auth'
 export async function POST(req: NextRequest) {
   const session = await requireOwner()
   if (!session) {

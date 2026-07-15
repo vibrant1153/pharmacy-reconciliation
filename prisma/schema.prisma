@@ -47,6 +47,7 @@ model Batch {
 }
 
 enum BatchStatus {
+  PENDING
   ACTIVE
   COMPLETED
 }
