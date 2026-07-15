@@ -50,7 +50,22 @@ enum BatchStatus {
 }
 
 model Sale {
-  id        String   @id @default(cuid())
+  id         String     @id @default(cuid())
   employeeId String
-  createdAt DateTime @default(now())
+  employee   User       @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime   @default(now())
+  total      Decimal    @db.Decimal(10, 2)
+  voided     Boolean    @default(false)
+  items      SaleItem[]
+}
+
+model SaleItem {
+  id            String  @id @default(cuid())
+  saleId        String
+  sale          Sale    @relation(fields: [saleId], references: [id])
+  batchId       String
+  batch         Batch   @relation(fields: [batchId], references: [id])
+  productId     String
+  quantity      Int
+  pricePerStrip Decimal @db.Decimal(10, 2)
 }
