@@ -23,10 +23,13 @@ export async function proxy(req: NextRequest) {
   if (session.role === 'EMPLOYEE' && path.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/sales', req.url))
   }
+  if (session.role === 'EMPLOYEE' && (path.startsWith('/dashboard') || path.startsWith('/products'))) {
+    return NextResponse.redirect(new URL('/sales', req.url))
+  }
 
   return res
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/sales/:path*'],
+  matcher: ['/dashboard/:path*', '/sales/:path*', '/products/:path*'],
 }
