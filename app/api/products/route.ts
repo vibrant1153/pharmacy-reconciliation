@@ -39,11 +39,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const session = await requireOwner()
+  const session = await requireAuth()
   if (!session) {
     return NextResponse.json(
-      { success: false, message: 'Owner access required.' },
-      { status: 403 }
+      { success: false, message: 'Login required.' },
+      { status: 401 }
     )
   }
 
