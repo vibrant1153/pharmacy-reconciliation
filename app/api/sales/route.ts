@@ -49,12 +49,36 @@ export async function POST(req: NextRequest) {
       include: { items: true },
     })
 
-    await tx.batch.update({
-      where: { id: batch.id },
-      data: { remainingStrips: newRemaining },
-    })
+    if (newRemaining === 0) {
+      const expectedRevenue = batch.cartonsAdded * batch.product.stripsPerCarton * Number(pricePerStrip)
 
-    // Stage 4 will add auto-closure logic here. For now, batch just decrements.
+      await tx.batch.update({
+        where: { id: batch.id },
+        data: {
+          remainingStrips: 0,
+          status: 'COMPLETED',
+          closedAt: new Date(),
+          expectedRevenue,
+        },
+      })
+
+      const nextBatch = await tx.batch.findFirst({
+        where: { productId, status: 'PENDING' },
+        orderBy: { createdAt: 'asc' },
+      })
+
+      if (nextBatch) {
+        await tx.batch.update({
+          where: { id: nextBatch.id },
+          data: { status: 'ACTIVE' },
+        })
+      }
+    } else {
+      await tx.batch.update({
+        where: { id: batch.id },
+        data: { remainingStrips: newRemaining },
+      })
+    }
 
     return sale
   })
