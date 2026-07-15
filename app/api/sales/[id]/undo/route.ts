@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+import { logAudit } from '@/lib/audit'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAuth()
@@ -34,6 +35,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       })
     }
     await tx.sale.update({ where: { id }, data: { voided: true } })
+  })
+
+  await logAudit({
+    userId: session.userId!,
+    action: 'SALE_UNDONE',
+    entity: 'Sale',
+    entityId: id,
+    oldValue: `total: ${sale.total}`,
+    newValue: 'voided',
   })
 
   return NextResponse.json({ success: true })
