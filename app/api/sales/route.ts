@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+import { logAudit } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
   const session = await requireAuth()
@@ -81,6 +82,14 @@ export async function POST(req: NextRequest) {
     }
 
     return sale
+  })
+
+  await logAudit({
+    userId: session.userId!,
+    action: 'SOLD',
+    entity: 'Sale',
+    entityId: result.id,
+    newValue: `${quantity} x ${batch.product.name} = ${total} Birr`,
   })
 
   return NextResponse.json({ success: true, sale: result })
