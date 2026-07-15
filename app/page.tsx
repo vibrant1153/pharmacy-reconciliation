@@ -1,12 +1,5 @@
 import Image from "next/image";
 
-import { prisma } from '@/lib/prisma'
-
-async function testConnection() {
-  const count = await prisma.user.count()
-  console.log('User count:', count)
-}
-testConnection()
 export default function Home() {
   
   return (
