@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOwner } from '@/lib/auth'
+import { logAudit } from '@/lib/audit'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireOwner()
@@ -29,6 +30,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       remainingStrips: cartons * product.stripsPerCarton,
       status: hasActive ? 'PENDING' : 'ACTIVE',
     },
+  })
+
+  await logAudit({
+    userId: session.userId!,
+    action: 'BATCH_ADDED',
+    entity: 'Batch',
+    entityId: batch.id,
+    newValue: `${cartons} cartons added for ${product.name}`,
   })
 
   return NextResponse.json({ success: true, batch })
