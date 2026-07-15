@@ -18,6 +18,8 @@ export default function ProductsPage() {
   const [startingCartons, setStartingCartons] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
 
   async function loadProducts() {
     const res = await fetch('/api/products')
@@ -59,8 +61,30 @@ export default function ProductsPage() {
     loadProducts()
   }
 
+  function startEdit(product: Product) {
+    setEditingId(product.id)
+    setEditName(product.name)
+  }
+
+  async function saveEdit(id: string) {
+    const res = await fetch(`/api/products/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: editName }),
+    })
+    const data = await res.json()
+
+    if (!data.success) {
+      alert(data.message)
+      return
+    }
+
+    setEditingId(null)
+    loadProducts()
+  }
+
   return (
-    <div style={{ padding: 24, maxWidth: 600 }}>
+    <div style={{ padding: 24, maxWidth: 700 }}>
       <h1>Medicine Management</h1>
 
       <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
@@ -82,15 +106,32 @@ export default function ProductsPage() {
             <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Price/Strip</th>
             <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Strips/Carton</th>
             <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Remaining Strips</th>
+            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}></th>
           </tr>
         </thead>
         <tbody>
           {products.map((p) => (
             <tr key={p.id}>
-              <td>{p.name}</td>
+              <td>
+                {editingId === p.id ? (
+                  <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ padding: 4 }} />
+                ) : (
+                  p.name
+                )}
+              </td>
               <td>{p.pricePerStrip}</td>
               <td>{p.stripsPerCarton}</td>
               <td>{p.batches[0]?.remainingStrips ?? 0}</td>
+              <td>
+                {editingId === p.id ? (
+                  <>
+                    <button onClick={() => saveEdit(p.id)} style={{ marginRight: 4 }}>Save</button>
+                    <button onClick={() => setEditingId(null)}>Cancel</button>
+                  </>
+                ) : (
+                  <button onClick={() => startEdit(p)}>Edit</button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
