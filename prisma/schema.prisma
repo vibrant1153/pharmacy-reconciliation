@@ -39,11 +39,12 @@ model Batch {
   product         Product     @relation(fields: [productId], references: [id])
   cartonsAdded    Int
   remainingStrips Int
-  status          BatchStatus @default(ACTIVE)
+  status          BatchStatus @default(PENDING)
   openedAt        DateTime    @default(now())
   closedAt        DateTime?
+  expectedRevenue Decimal?    @db.Decimal(10, 2)
   createdAt       DateTime    @default(now())
-  saleItems SaleItem[]
+  saleItems       SaleItem[]
 }
 
 enum BatchStatus {
