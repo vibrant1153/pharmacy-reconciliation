@@ -40,6 +40,7 @@ export default function DashboardPage() {
           <a href="/products" style={{ marginRight: 16 }}>Medicine Management</a>
           <a href="/history" style={{ marginRight: 16 }}>Sales History</a>
           <a href="/audit" style={{ marginRight: 16 }}>Audit History</a>
+          <a href="/reconciliation" style={{ marginRight: 16 }}>Reconciliation</a>
           <button onClick={logout} style={{ padding: 8 }}>Logout</button>
         </div>
       </div>
