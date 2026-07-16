@@ -16,14 +16,14 @@ export async function proxy(req: NextRequest) {
 
   const path = req.nextUrl.pathname
 
-  if (!session.userId && (path.startsWith('/dashboard') || path.startsWith('/sales'))) {
+  const protectedPaths = ['/dashboard', '/sales', '/products', '/history', '/audit']
+  const ownerOnlyPaths = ['/dashboard', '/products', '/audit']
+
+  if (!session.userId && protectedPaths.some((p) => path.startsWith(p))) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  if (session.role === 'EMPLOYEE' && path.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/sales', req.url))
-  }
-  if (session.role === 'EMPLOYEE' && (path.startsWith('/dashboard') || path.startsWith('/products'))) {
+  if (session.role === 'EMPLOYEE' && ownerOnlyPaths.some((p) => path.startsWith(p))) {
     return NextResponse.redirect(new URL('/sales', req.url))
   }
 
@@ -31,5 +31,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/sales/:path*', '/products/:path*'],
+  matcher: ['/dashboard/:path*', '/sales/:path*', '/products/:path*', '/history/:path*', '/audit/:path*'],
 }
