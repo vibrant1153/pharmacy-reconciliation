@@ -86,3 +86,10 @@ model AuditLog {
   newValue  String?
   timestamp DateTime @default(now())
 }
+
+model DailyReconciliation {
+  id         String   @id @default(cuid())
+  date       DateTime @unique @db.Date
+  actualCash Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+}
