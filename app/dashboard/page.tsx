@@ -38,6 +38,8 @@ export default function DashboardPage() {
         <h1>Owner Dashboard</h1>
         <div>
           <a href="/products" style={{ marginRight: 16 }}>Medicine Management</a>
+          <a href="/history" style={{ marginRight: 16 }}>Sales History</a>
+          <a href="/audit" style={{ marginRight: 16 }}>Audit History</a>
           <button onClick={logout} style={{ padding: 8 }}>Logout</button>
         </div>
       </div>

@@ -79,9 +79,7 @@ export default function SalesPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h1>Sell Medicine</h1>
         <div>
-          <button onClick={undoLastSale} disabled={!lastSaleId} style={{ padding: 8, marginRight: 8 }}>
-            Undo Last Sale
-          </button>
+          <a href="/history" style={{ marginRight: 16 }}>My Sales</a>
           <button onClick={logout} style={{ padding: 8 }}>Logout</button>
         </div>
       </div>
