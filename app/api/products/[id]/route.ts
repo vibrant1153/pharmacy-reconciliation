@@ -10,27 +10,50 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { id } = await params
-  const { name } = await req.json()
-
-  if (!name || !name.trim()) {
-    return NextResponse.json({ success: false, message: 'Name cannot be empty.' }, { status: 400 })
-  }
+  const body = await req.json()
 
   const before = await prisma.product.findUnique({ where: { id } })
+  if (!before) {
+    return NextResponse.json({ success: false, message: 'Product not found.' }, { status: 404 })
+  }
 
-  const product = await prisma.product.update({
-    where: { id },
-    data: { name: name.trim() },
-  })
+  const data: Record<string, unknown> = {}
+  const changes: string[] = []
 
-  await logAudit({
-    userId: session.userId!,
-    action: 'PRODUCT_RENAMED',
-    entity: 'Product',
-    entityId: id,
-    oldValue: before?.name,
-    newValue: product.name,
-  })
+  if (body.name !== undefined && body.name.trim() && body.name.trim() !== before.name) {
+    data.name = body.name.trim()
+    changes.push(`name: ${before.name} → ${body.name.trim()}`)
+  }
+
+  if (body.pricePerStrip !== undefined && Number(body.pricePerStrip) !== Number(before.pricePerStrip)) {
+    data.pricePerStrip = body.pricePerStrip
+    changes.push(`price: ${before.pricePerStrip} → ${body.pricePerStrip}`)
+  }
+
+  if (body.categoryId !== undefined) {
+    data.categoryId = body.categoryId || null
+  }
+
+  if (body.subcategoryId !== undefined) {
+    data.subcategoryId = body.subcategoryId || null
+  }
+
+  if (body.archived !== undefined) {
+    data.archived = body.archived
+    changes.push(body.archived ? 'archived' : 'unarchived')
+  }
+
+  const product = await prisma.product.update({ where: { id }, data })
+
+  if (changes.length > 0) {
+    await logAudit({
+      userId: session.userId!,
+      action: 'PRODUCT_UPDATED',
+      entity: 'Product',
+      entityId: id,
+      newValue: changes.join(', '),
+    })
+  }
 
   return NextResponse.json({ success: true, product })
 }
