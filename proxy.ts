@@ -16,8 +16,8 @@ export async function proxy(req: NextRequest) {
 
   const path = req.nextUrl.pathname
 
-  const protectedPaths = ['/dashboard', '/sales', '/products', '/history', '/audit']
-  const ownerOnlyPaths = ['/dashboard', '/products', '/audit']
+  const protectedPaths = ['/dashboard', '/sales', '/products', '/history', '/audit', '/reconciliation']
+  const ownerOnlyPaths = ['/dashboard', '/products', '/audit', '/reconciliation']
 
   if (!session.userId && protectedPaths.some((p) => path.startsWith(p))) {
     return NextResponse.redirect(new URL('/login', req.url))
@@ -31,5 +31,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/sales/:path*', '/products/:path*', '/history/:path*', '/audit/:path*'],
+  matcher: ['/dashboard/:path*', '/sales/:path*', '/products/:path*', '/history/:path*', '/audit/:path*', '/reconciliation/:path*'],
 }
