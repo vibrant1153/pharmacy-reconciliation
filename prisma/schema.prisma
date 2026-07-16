@@ -24,13 +24,36 @@ enum Role {
   EMPLOYEE
 }
 
+model Category {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  subcategories Subcategory[]
+  products      Product[]
+  createdAt     DateTime       @default(now())
+}
+
+model Subcategory {
+  id         String   @id @default(cuid())
+  name       String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  products   Product[]
+  createdAt  DateTime @default(now())
+
+  @@unique([name, categoryId])
+}
+
 model Product {
-  id              String   @id @default(cuid())
+  id              String       @id @default(cuid())
   name            String
-  pricePerStrip   Decimal  @db.Decimal(10, 2)
+  pricePerStrip   Decimal      @db.Decimal(10, 2)
   stripsPerCarton Int
-  archived        Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  archived        Boolean      @default(false)
+  categoryId      String?
+  category        Category?    @relation(fields: [categoryId], references: [id])
+  subcategoryId   String?
+  subcategory     Subcategory? @relation(fields: [subcategoryId], references: [id])
+  createdAt       DateTime     @default(now())
   batches         Batch[]
 }
 
