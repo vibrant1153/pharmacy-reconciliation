@@ -25,11 +25,11 @@ enum Role {
 }
 
 model Category {
-  id            String         @id @default(cuid())
-  name          String         @unique
+  id            String        @id @default(cuid())
+  name          String        @unique
   subcategories Subcategory[]
   products      Product[]
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime      @default(now())
 }
 
 model Subcategory {
@@ -44,31 +44,47 @@ model Subcategory {
 }
 
 model Product {
-  id              String       @id @default(cuid())
+  id              String           @id @default(cuid())
   name            String
-  pricePerStrip   Decimal      @db.Decimal(10, 2)
-  stripsPerCarton Int
-  archived        Boolean      @default(false)
+  archived        Boolean          @default(false)
   categoryId      String?
-  category        Category?    @relation(fields: [categoryId], references: [id])
+  category        Category?        @relation(fields: [categoryId], references: [id])
   subcategoryId   String?
-  subcategory     Subcategory? @relation(fields: [subcategoryId], references: [id])
-  createdAt       DateTime     @default(now())
+  subcategory     Subcategory?     @relation(fields: [subcategoryId], references: [id])
+  createdAt       DateTime         @default(now())
+  packagingLevels PackagingLevel[]
   batches         Batch[]
 }
 
+// Ordered chain per product: order 0 = largest unit (e.g. Box), highest order = base/sellable unit (e.g. Tablet)
+model PackagingLevel {
+  id               String     @id @default(cuid())
+  productId        String
+  product          Product    @relation(fields: [productId], references: [id])
+  name             String     // "Box", "Strip", "Tablet"
+  order            Int        // 0 = top of chain
+  quantityInParent Int?       // how many of this = 1 of the level above; null for order 0
+  isSellable       Boolean    @default(true)
+  isBaseUnit       Boolean    @default(false) // true for the smallest physical unit
+  price            Decimal?   @db.Decimal(10, 2) // set only where isSellable = true
+  saleItems        SaleItem[]
+
+  @@unique([productId, order])
+}
+
 model Batch {
-  id              String      @id @default(cuid())
-  productId       String
-  product         Product     @relation(fields: [productId], references: [id])
-  cartonsAdded    Int
-  remainingStrips Int
-  status          BatchStatus @default(PENDING)
-  openedAt        DateTime    @default(now())
-  closedAt        DateTime?
-  expectedRevenue Decimal?    @db.Decimal(10, 2)
-  createdAt       DateTime    @default(now())
-  saleItems       SaleItem[]
+  id                 String      @id @default(cuid())
+  productId          String
+  product            Product     @relation(fields: [productId], references: [id])
+  cartonsAdded       Int         // number of top-level units added (e.g. boxes)
+  totalBaseUnits     Int         // total base units (e.g. tablets) this batch represents
+  remainingBaseUnits Int
+  status             BatchStatus @default(PENDING)
+  openedAt           DateTime    @default(now())
+  closedAt           DateTime?
+  expectedRevenue    Decimal?    @db.Decimal(10, 2)
+  createdAt          DateTime    @default(now())
+  saleItems          SaleItem[]
 }
 
 enum BatchStatus {
@@ -88,14 +104,17 @@ model Sale {
 }
 
 model SaleItem {
-  id            String  @id @default(cuid())
-  saleId        String
-  sale          Sale    @relation(fields: [saleId], references: [id])
-  batchId       String
-  batch         Batch   @relation(fields: [batchId], references: [id])
-  productId     String
-  quantity      Int
-  pricePerStrip Decimal @db.Decimal(10, 2)
+  id                String         @id @default(cuid())
+  saleId            String
+  sale              Sale           @relation(fields: [saleId], references: [id])
+  batchId           String
+  batch             Batch          @relation(fields: [batchId], references: [id])
+  productId         String
+  packagingLevelId  String
+  packagingLevel    PackagingLevel @relation(fields: [packagingLevelId], references: [id])
+  quantitySold       Int           // quantity at the level that was sold (e.g. 2 strips)
+  baseUnitsConsumed  Int           // resolved into base units, for stock decrement
+  pricePerUnit       Decimal       @db.Decimal(10, 2)
 }
 
 model AuditLog {
