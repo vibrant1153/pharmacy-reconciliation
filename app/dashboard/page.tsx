@@ -40,7 +40,7 @@ export default function DashboardPage() {
   if (!data) {
     return (
       <div style={{ display: 'flex' }}>
-        <Sidebar userName="Owner" />
+        <Sidebar userName="Owner" role="OWNER" />
         <div style={{ padding: 32 }}>Loading...</div>
       </div>
     )

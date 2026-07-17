@@ -155,7 +155,7 @@ export default function ProductsPage() {
 
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar userName="Owner" />
+      <Sidebar userName="Owner" role="OWNER" />
       <div style={{ flex: 1, padding: 32, maxWidth: 1200 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 24, letterSpacing: '-0.02em' }}>
           Medicine Management
