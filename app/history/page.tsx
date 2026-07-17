@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Sidebar from '@/components/Sidebar'
 
 interface SaleRecord {
   id: string
@@ -13,6 +14,7 @@ interface SaleRecord {
 
 export default function HistoryPage() {
   const [sales, setSales] = useState<SaleRecord[]>([])
+  const [role, setRole] = useState<'OWNER' | 'EMPLOYEE' | null>(null)
 
   useEffect(() => {
     fetch('/api/sales-history')
@@ -23,34 +25,51 @@ export default function HistoryPage() {
   }, [])
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Sales History</h1>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Time</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Employee</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Items</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Total</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sales.map((sale) => (
-            <tr key={sale.id} style={{ opacity: sale.voided ? 0.5 : 1 }}>
-              <td>{new Date(sale.createdAt).toLocaleString()}</td>
-              <td>{sale.employeeName}</td>
-              <td>
-                {sale.items.map((i, idx) => (
-                  <div key={idx}>{i.quantity} x {i.productName}</div>
-                ))}
-              </td>
-              <td>{sale.total.toFixed(2)} Birr</td>
-              <td>{sale.voided ? 'Voided' : 'Completed'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ display: 'flex' }}>
+      <Sidebar userName="Owner" />
+      <div style={{ flex: 1, padding: 32, maxWidth: 1100 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 24, letterSpacing: '-0.02em' }}>
+          Sales History
+        </h1>
+
+        <div className="card fade-in" style={{ padding: 24 }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Employee</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sales.map((sale) => (
+                <tr key={sale.id} style={{ opacity: sale.voided ? 0.5 : 1 }}>
+                  <td>{new Date(sale.createdAt).toLocaleString()}</td>
+                  <td>{sale.employeeName}</td>
+                  <td>
+                    {sale.items.map((i, idx) => (
+                      <div key={idx}>{i.quantity} x {i.productName}</div>
+                    ))}
+                  </td>
+                  <td style={{ fontWeight: 600 }}>{sale.total.toFixed(2)} Birr</td>
+                  <td>
+                    <span className={`badge ${sale.voided ? 'badge-neutral' : 'badge-success'}`}>
+                      {sale.voided ? 'Voided' : 'Completed'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {sales.length === 0 && (
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: 14, padding: '20px 0' }}>
+              No sales recorded yet.
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
