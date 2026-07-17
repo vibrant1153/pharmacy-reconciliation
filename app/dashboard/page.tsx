@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Sidebar from '@/components/Sidebar'
 
 interface DashboardData {
   todaySalesCount: number
@@ -8,6 +9,17 @@ interface DashboardData {
   lowStock: { name: string; remaining: number }[]
   outOfStock: { name: string }[]
   recentActivity: { employeeName: string; itemCount: number; total: number; time: string }[]
+}
+
+function StatCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div className="card card-hover fade-in" style={{ padding: 20, flex: 1, minWidth: 160 }}>
+      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 6, color: accent || 'var(--color-text-primary)' }}>
+        {value}
+      </div>
+    </div>
+  )
 }
 
 export default function DashboardPage() {
@@ -21,84 +33,68 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadDashboard()
-    const interval = setInterval(loadDashboard, 15000) // refresh every 15s
+    const interval = setInterval(loadDashboard, 15000)
     return () => clearInterval(interval)
   }, [])
 
-  async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    window.location.href = '/login'
+  if (!data) {
+    return (
+      <div style={{ display: 'flex' }}>
+        <Sidebar userName="Owner" />
+        <div style={{ padding: 32 }}>Loading...</div>
+      </div>
+    )
   }
 
-  if (!data) return <div style={{ padding: 24 }}>Loading...</div>
-
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h1>Owner Dashboard</h1>
-        <div>
-          <a href="/products" style={{ marginRight: 16 }}>Medicine Management</a>
-          <a href="/history" style={{ marginRight: 16 }}>Sales History</a>
-          <a href="/audit" style={{ marginRight: 16 }}>Audit History</a>
-          <a href="/reconciliation" style={{ marginRight: 16 }}>Reconciliation</a>
-          <button onClick={logout} style={{ padding: 8 }}>Logout</button>
-        </div>
-      </div>
+    <div style={{ display: 'flex' }}>
+      <Sidebar userName="Owner" />
+      <div style={{ flex: 1, padding: 32, maxWidth: 1200 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 24, letterSpacing: '-0.02em' }}>
+          Owner Dashboard
+        </h1>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 32 }}>
-        <div style={{ border: '1px solid #ccc', padding: 16, minWidth: 160 }}>
-          <div>Today's Sales</div>
-          <strong style={{ fontSize: 24 }}>{data.todaySalesCount}</strong>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 32 }}>
+          <StatCard label="Today's Sales" value={String(data.todaySalesCount)} />
+          <StatCard label="Expected Revenue Today" value={`${data.todayExpectedRevenue.toFixed(2)} Birr`} accent="var(--color-primary)" />
+          <StatCard label="Low Stock" value={String(data.lowStock.length)} accent={data.lowStock.length > 0 ? 'var(--color-warning)' : undefined} />
+          <StatCard label="Out of Stock" value={String(data.outOfStock.length)} accent={data.outOfStock.length > 0 ? 'var(--color-danger)' : undefined} />
         </div>
-        <div style={{ border: '1px solid #ccc', padding: 16, minWidth: 160 }}>
-          <div>Expected Revenue Today</div>
-          <strong style={{ fontSize: 24 }}>{data.todayExpectedRevenue.toFixed(2)} Birr</strong>
-        </div>
-        <div style={{ border: '1px solid #ccc', padding: 16, minWidth: 160 }}>
-          <div>Low Stock</div>
-          <strong style={{ fontSize: 24 }}>{data.lowStock.length}</strong>
-        </div>
-        <div style={{ border: '1px solid #ccc', padding: 16, minWidth: 160 }}>
-          <div>Out of Stock</div>
-          <strong style={{ fontSize: 24 }}>{data.outOfStock.length}</strong>
-        </div>
-      </div>
 
-      <div style={{ display: 'flex', gap: 32 }}>
-        <div style={{ flex: 1 }}>
-          <h2>Low Stock</h2>
-          {data.lowStock.length === 0 && <p>Nothing low right now.</p>}
-          <ul>
-            {data.lowStock.map((p) => (
-              <li key={p.name}>{p.name} — {p.remaining} strips left</li>
+        <div style={{ display: 'flex', gap: 24 }}>
+          <div className="card fade-in" style={{ flex: 1, padding: 24 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Stock Alerts</h2>
+            {data.lowStock.length === 0 && data.outOfStock.length === 0 && (
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>Nothing to flag right now.</p>
+            )}
+            {data.outOfStock.map((p) => (
+              <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
+                <span style={{ fontSize: 14 }}>{p.name}</span>
+                <span className="badge badge-danger">Out of stock</span>
+              </div>
             ))}
-          </ul>
+            {data.lowStock.map((p) => (
+              <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
+                <span style={{ fontSize: 14 }}>{p.name}</span>
+                <span className="badge badge-warning">{p.remaining} left</span>
+              </div>
+            ))}
+          </div>
 
-          {data.outOfStock.length > 0 && (
-            <>
-              <h2>Out of Stock</h2>
-              <ul>
-                {data.outOfStock.map((p) => (
-                  <li key={p.name}>{p.name}</li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <h2>Recent Activity</h2>
-          {data.recentActivity.length === 0 && <p>No sales yet today.</p>}
-          <ul>
+          <div className="card fade-in" style={{ flex: 1, padding: 24 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Recent Activity</h2>
+            {data.recentActivity.length === 0 && (
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>No sales yet today.</p>
+            )}
             {data.recentActivity.map((a, i) => (
-              <li key={i}>
-                {a.employeeName} sold {a.itemCount} item(s) — {a.total.toFixed(2)} Birr
-                <span style={{ color: '#888', marginLeft: 8 }}>
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6', fontSize: 14 }}>
+                <span>{a.employeeName} sold {a.itemCount} item(s) — {a.total.toFixed(2)} Birr</span>
+                <span style={{ color: 'var(--color-text-secondary)', fontSize: 12 }}>
                   {new Date(a.time).toLocaleTimeString()}
                 </span>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
     </div>
