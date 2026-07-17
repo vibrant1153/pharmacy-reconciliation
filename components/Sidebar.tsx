@@ -11,8 +11,14 @@ const ownerLinks = [
   { href: '/audit', label: 'Audit History' },
 ]
 
-export default function Sidebar({ userName }: { userName: string }) {
+const employeeLinks = [
+  { href: '/sales', label: 'Sell Medicine' },
+  { href: '/history', label: 'My Sales' },
+]
+
+export default function Sidebar({ userName, role }: { userName: string; role: 'OWNER' | 'EMPLOYEE' }) {
   const pathname = usePathname()
+  const links = role === 'OWNER' ? ownerLinks : employeeLinks
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -39,7 +45,7 @@ export default function Sidebar({ userName }: { userName: string }) {
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-        {ownerLinks.map((link) => {
+        {links.map((link) => {
           const active = pathname === link.href
           return (
             <Link
