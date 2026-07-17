@@ -21,7 +21,6 @@ export default function LoginPage() {
       body: JSON.stringify({ username, pin }),
     })
     const data = await res.json()
-
     setLoading(false)
 
     if (!data.success) {
@@ -29,33 +28,69 @@ export default function LoginPage() {
       return
     }
 
-    if (data.user.role === 'OWNER') {
-      router.push('/dashboard')
-    } else {
-      router.push('/sales')
-    }
+    router.push(data.user.role === 'OWNER' ? '/dashboard' : '/sales')
     router.refresh()
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-      <form onSubmit={handleLogin} style={{ width: 300, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <h1>Pharmacy Login</h1>
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={{ padding: 8 }}
-        />
-        <input
-          placeholder="PIN"
-          type="password"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          style={{ padding: 8 }}
-        />
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ padding: 10 }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(160deg, #0F172A 0%, #0F766E 140%)',
+      }}
+    >
+      <form
+        onSubmit={handleLogin}
+        className="card fade-in"
+        style={{
+          width: 360,
+          padding: 36,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 18,
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em' }}>
+            Trusty
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+            Pharmacy Reconciliation
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Username</label>
+          <input
+            className="input"
+            placeholder="e.g. ahmed"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoFocus
+          />
+        </div>
+
+        <div>
+          <label className="label">PIN</label>
+          <input
+            className="input"
+            type="password"
+            placeholder="••••"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+          />
+        </div>
+
+        {error && (
+          <div className="badge badge-danger" style={{ justifyContent: 'center' }}>
+            {error}
+          </div>
+        )}
+
+        <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 8 }}>
           {loading ? 'Logging in...' : 'Log In'}
         </button>
       </form>
