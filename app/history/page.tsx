@@ -14,9 +14,12 @@ interface SaleRecord {
 
 export default function HistoryPage() {
   const [sales, setSales] = useState<SaleRecord[]>([])
-  const [role, setRole] = useState<'OWNER' | 'EMPLOYEE' | null>(null)
+  const [user, setUser] = useState<{ name: string; role: 'OWNER' | 'EMPLOYEE' } | null>(null)
 
   useEffect(() => {
+    fetch('/api/auth/me').then((r) => r.json()).then((data) => {
+      if (data.success) setUser({ name: data.name, role: data.role })
+    })
     fetch('/api/sales-history')
       .then((r) => r.json())
       .then((data) => {
@@ -26,7 +29,7 @@ export default function HistoryPage() {
 
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar userName="Owner" />
+      <Sidebar userName={user?.name ?? '...'} role={user?.role ?? 'EMPLOYEE'} />
       <div style={{ flex: 1, padding: 32, maxWidth: 1100 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 24, letterSpacing: '-0.02em' }}>
           Sales History
