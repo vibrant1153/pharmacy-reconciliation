@@ -6,37 +6,69 @@ import { logAudit } from '@/lib/audit'
 export async function POST(req: NextRequest) {
   const session = await requireOwner()
   if (!session) {
-    return NextResponse.json(
-      { success: false, message: 'Owner access required.' },
-      { status: 403 }
-    )
+    return NextResponse.json({ success: false, message: 'Owner access required.' }, { status: 403 })
   }
 
-  const { name, pricePerStrip, stripsPerCarton, startingCartons, categoryId, subcategoryId } = await req.json()
+  const body = await req.json()
+  const {
+    name,
+    categoryId,
+    subcategoryId,
+    boxName, boxPrice, boxSellable,
+    stripName, stripsPerBox, stripPrice, stripSellable,
+    tabletName, tabletsPerStrip, tabletPrice, tabletSellable,
+    startingBoxes,
+  } = body
 
-  if (!name || !pricePerStrip || !stripsPerCarton || !startingCartons) {
-    return NextResponse.json(
-      { success: false, message: 'All fields are required.' },
-      { status: 400 }
-    )
+  if (!name || !stripsPerBox || !tabletsPerStrip || !startingBoxes) {
+    return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 })
   }
+
+  const totalBaseUnits = startingBoxes * stripsPerBox * tabletsPerStrip
 
   const product = await prisma.product.create({
     data: {
       name,
-      pricePerStrip,
-      stripsPerCarton,
       categoryId: categoryId || null,
       subcategoryId: subcategoryId || null,
+      packagingLevels: {
+        create: [
+          {
+            name: boxName || 'Box',
+            order: 0,
+            quantityInParent: null,
+            isSellable: !!boxSellable,
+            isBaseUnit: false,
+            price: boxSellable ? boxPrice : null,
+          },
+          {
+            name: stripName || 'Strip',
+            order: 1,
+            quantityInParent: stripsPerBox,
+            isSellable: !!stripSellable,
+            isBaseUnit: false,
+            price: stripSellable ? stripPrice : null,
+          },
+          {
+            name: tabletName || 'Tablet',
+            order: 2,
+            quantityInParent: tabletsPerStrip,
+            isSellable: !!tabletSellable,
+            isBaseUnit: true,
+            price: tabletSellable ? tabletPrice : null,
+          },
+        ],
+      },
       batches: {
         create: {
-          cartonsAdded: startingCartons,
-          remainingStrips: startingCartons * stripsPerCarton,
+          cartonsAdded: startingBoxes,
+          totalBaseUnits,
+          remainingBaseUnits: totalBaseUnits,
           status: 'ACTIVE',
         },
       },
     },
-    include: { batches: true },
+    include: { packagingLevels: true, batches: true },
   })
 
   await logAudit({
@@ -44,7 +76,7 @@ export async function POST(req: NextRequest) {
     action: 'PRODUCT_ADDED',
     entity: 'Product',
     entityId: product.id,
-    newValue: `${name} added`,
+    newValue: `${name} added with 3-level packaging`,
   })
 
   return NextResponse.json({ success: true, product })
@@ -53,10 +85,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const session = await requireAuth()
   if (!session) {
-    return NextResponse.json(
-      { success: false, message: 'Login required.' },
-      { status: 401 }
-    )
+    return NextResponse.json({ success: false, message: 'Login required.' }, { status: 401 })
   }
 
   const includeArchived = req.nextUrl.searchParams.get('includeArchived') === 'true'
@@ -64,6 +93,7 @@ export async function GET(req: NextRequest) {
   const products = await prisma.product.findMany({
     where: includeArchived ? {} : { archived: false },
     include: {
+      packagingLevels: { orderBy: { order: 'asc' } },
       batches: { where: { status: 'ACTIVE' } },
       category: true,
       subcategory: true,
