@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Sidebar from '@/components/Sidebar'
 
 interface ReconciliationData {
   date: string
@@ -11,11 +12,11 @@ interface ReconciliationData {
   status: 'green' | 'yellow' | 'red' | 'pending'
 }
 
-const statusColors: Record<string, string> = {
-  green: '#22C55E',
-  yellow: '#F59E0B',
-  red: '#EF4444',
-  pending: '#888',
+const statusMap: Record<string, { color: string; badge: string; label: string }> = {
+  green: { color: 'var(--color-success)', badge: 'badge-success', label: 'Balanced' },
+  yellow: { color: 'var(--color-warning)', badge: 'badge-warning', label: 'Minor Discrepancy' },
+  red: { color: 'var(--color-danger)', badge: 'badge-danger', label: 'Needs Investigation' },
+  pending: { color: 'var(--color-text-secondary)', badge: 'badge-neutral', label: 'Not Submitted' },
 }
 
 export default function ReconciliationPage() {
@@ -57,68 +58,113 @@ export default function ReconciliationPage() {
     loadData(selectedDate)
   }
 
-  if (!data) return <div style={{ padding: 24 }}>Loading...</div>
+  if (!data) {
+    return (
+      <div style={{ display: 'flex' }}>
+        <Sidebar userName="Owner" role="OWNER" />
+        <div style={{ padding: 32 }}>Loading...</div>
+      </div>
+    )
+  }
+
+  const status = statusMap[data.status]
 
   return (
-    <div style={{ padding: 24, maxWidth: 700 }}>
-      <h1>Reconciliation</h1>
-
-      <div style={{ marginBottom: 24 }}>
-        <label>
-          Date:{' '}
+    <div style={{ display: 'flex' }}>
+      <Sidebar userName="Owner" role="OWNER" />
+      <div style={{ flex: 1, padding: 32, maxWidth: 900 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em' }}>Reconciliation</h1>
           <input
             type="date"
+            className="input"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
+            style={{ width: 170 }}
           />
-        </label>
-      </div>
+        </div>
 
-      <div
-        style={{
-          padding: 16,
-          border: `2px solid ${statusColors[data.status]}`,
-          marginBottom: 24,
-        }}
-      >
-        <div>Expected Revenue: <strong>{data.totalExpectedRevenue.toFixed(2)} Birr</strong></div>
-        <div>Actual Cash: <strong>{data.actualCash !== null ? `${data.actualCash.toFixed(2)} Birr` : 'Not entered yet'}</strong></div>
-        <div>Difference: <strong>{data.diff !== null ? `${data.diff.toFixed(2)} Birr` : '—'}</strong></div>
-        <div style={{ color: statusColors[data.status], fontWeight: 'bold', textTransform: 'uppercase' }}>
-          Status: {data.status}
+        <div
+          className="card fade-in"
+          style={{
+            padding: 28,
+            marginBottom: 24,
+            borderLeft: `4px solid ${status.color}`,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+            <div>
+              <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Status</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: status.color, marginTop: 2 }}>
+                {status.label}
+              </div>
+            </div>
+            <span className={`badge ${status.badge}`} style={{ fontSize: 13, padding: '6px 14px' }}>
+              {data.status.toUpperCase()}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 32 }}>
+            <div>
+              <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Expected Revenue</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 2 }}>{data.totalExpectedRevenue.toFixed(2)} Birr</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Actual Cash</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 2 }}>
+                {data.actualCash !== null ? `${data.actualCash.toFixed(2)} Birr` : '—'}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Difference</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 2, color: status.color }}>
+                {data.diff !== null ? `${data.diff.toFixed(2)} Birr` : '—'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={submitCash} className="card fade-in" style={{ padding: 24, marginBottom: 24, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+          <div style={{ flex: 1 }}>
+            <label className="label">Actual cash counted</label>
+            <input
+              type="number"
+              step="0.01"
+              className="input"
+              placeholder="0.00"
+              value={cashInput}
+              onChange={(e) => setCashInput(e.target.value)}
+            />
+          </div>
+          <button type="submit" className="btn btn-primary">Submit</button>
+          {message && <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginLeft: 8 }}>{message}</span>}
+        </form>
+
+        <div className="card fade-in" style={{ padding: 24 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>By Medicine</h2>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Expected Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.products.map((p) => (
+                <tr key={p.name}>
+                  <td>{p.name}</td>
+                  <td>{p.expectedRevenue.toFixed(2)} Birr</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {data.products.length === 0 && (
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: 14, padding: '12px 0' }}>
+              No sales for this date.
+            </p>
+          )}
         </div>
       </div>
-
-      <form onSubmit={submitCash} style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        <input
-          type="number"
-          step="0.01"
-          placeholder="Actual cash counted"
-          value={cashInput}
-          onChange={(e) => setCashInput(e.target.value)}
-          style={{ padding: 8 }}
-        />
-        <button type="submit" style={{ padding: 8 }}>Submit</button>
-      </form>
-      {message && <p>{message}</p>}
-
-      <h2>By Medicine</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Medicine</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Expected Revenue</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.products.map((p) => (
-            <tr key={p.name}>
-              <td>{p.name}</td>
-              <td>{p.expectedRevenue.toFixed(2)} Birr</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   )
 }
