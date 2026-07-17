@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Sidebar from '@/components/Sidebar'
 
 interface Category {
   id: string
@@ -153,130 +154,161 @@ export default function ProductsPage() {
   const selectedCategoryForForm = categories.find((c) => c.id === categoryId)
 
   return (
-    <div style={{ padding: 24, maxWidth: 900 }}>
-      <h1>Medicine Management</h1>
+    <div style={{ display: 'flex' }}>
+      <Sidebar userName="Owner" />
+      <div style={{ flex: 1, padding: 32, maxWidth: 1200 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 24, letterSpacing: '-0.02em' }}>
+          Medicine Management
+        </h1>
 
-      <div style={{ display: 'flex', gap: 40, marginBottom: 32 }}>
-        <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 280 }}>
-          <h3>Add Medicine</h3>
-          <input placeholder="Medicine name" value={name} onChange={(e) => setName(e.target.value)} style={{ padding: 8 }} />
-          <input placeholder="Price per strip (Birr)" type="number" step="0.01" value={pricePerStrip} onChange={(e) => setPricePerStrip(e.target.value)} style={{ padding: 8 }} />
-          <input placeholder="Strips per carton" type="number" value={stripsPerCarton} onChange={(e) => setStripsPerCarton(e.target.value)} style={{ padding: 8 }} />
-          <input placeholder="Starting cartons in stock" type="number" value={startingCartons} onChange={(e) => setStartingCartons(e.target.value)} style={{ padding: 8 }} />
+        <div style={{ display: 'flex', gap: 20, marginBottom: 32, alignItems: 'flex-start' }}>
+          <form onSubmit={handleAdd} className="card fade-in" style={{ padding: 24, width: 300, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Add Medicine</h3>
 
-          <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubcategoryId('') }} style={{ padding: 8 }}>
-            <option value="">No category</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-
-          {selectedCategoryForForm && selectedCategoryForForm.subcategories.length > 0 && (
-            <select value={subcategoryId} onChange={(e) => setSubcategoryId(e.target.value)} style={{ padding: 8 }}>
-              <option value="">No subcategory</option>
-              {selectedCategoryForForm.subcategories.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          )}
-
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <button type="submit" disabled={loading} style={{ padding: 10 }}>
-            {loading ? 'Adding...' : 'Add Medicine'}
-          </button>
-        </form>
-
-        <div style={{ width: 280 }}>
-          <h3>Categories</h3>
-          <form onSubmit={addCategory} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <input placeholder="New category" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} style={{ padding: 8, flex: 1 }} />
-            <button type="submit" style={{ padding: 8 }}>Add</button>
-          </form>
-
-          <form onSubmit={addSubcategory} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <select value={subcategoryParentId} onChange={(e) => setSubcategoryParentId(e.target.value)} style={{ padding: 8 }}>
-              <option value="">Select category...</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input placeholder="New subcategory" value={newSubcategoryName} onChange={(e) => setNewSubcategoryName(e.target.value)} style={{ padding: 8, flex: 1 }} />
-              <button type="submit" style={{ padding: 8 }}>Add</button>
+            <div>
+              <label className="label">Medicine name</label>
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
+            <div>
+              <label className="label">Price per strip (Birr)</label>
+              <input className="input" type="number" step="0.01" value={pricePerStrip} onChange={(e) => setPricePerStrip(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Strips per carton</label>
+              <input className="input" type="number" value={stripsPerCarton} onChange={(e) => setStripsPerCarton(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Starting cartons</label>
+              <input className="input" type="number" value={startingCartons} onChange={(e) => setStartingCartons(e.target.value)} />
+            </div>
+
+            <div>
+              <label className="label">Category</label>
+              <select className="input" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubcategoryId('') }}>
+                <option value="">No category</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {selectedCategoryForForm && selectedCategoryForForm.subcategories.length > 0 && (
+              <div>
+                <label className="label">Subcategory</label>
+                <select className="input" value={subcategoryId} onChange={(e) => setSubcategoryId(e.target.value)}>
+                  <option value="">No subcategory</option>
+                  {selectedCategoryForForm.subcategories.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {error && <div className="badge badge-danger">{error}</div>}
+            <button type="submit" disabled={loading} className="btn btn-primary">
+              {loading ? 'Adding...' : 'Add Medicine'}
+            </button>
           </form>
 
-          <ul style={{ marginTop: 12 }}>
+          <div className="card fade-in" style={{ padding: 24, width: 280 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Categories</h3>
+
+            <form onSubmit={addCategory} style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <input className="input" placeholder="New category" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} />
+              <button type="submit" className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }}>Add</button>
+            </form>
+
+            <form onSubmit={addSubcategory} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              <select className="input" value={subcategoryParentId} onChange={(e) => setSubcategoryParentId(e.target.value)}>
+                <option value="">Select category...</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="input" placeholder="New subcategory" value={newSubcategoryName} onChange={(e) => setNewSubcategoryName(e.target.value)} />
+                <button type="submit" className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }}>Add</button>
+              </div>
+            </form>
+
             {categories.map((c) => (
-              <li key={c.id}>
-                {c.name}
-                {c.subcategories.length > 0 && (
-                  <ul>
-                    {c.subcategories.map((s) => <li key={s.id}>{s.name}</li>)}
-                  </ul>
-                )}
-              </li>
+              <div key={c.id} style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</div>
+                {c.subcategories.map((s) => (
+                  <div key={s.id} style={{ fontSize: 12, color: 'var(--color-text-secondary)', paddingLeft: 12 }}>
+                    {s.name}
+                  </div>
+                ))}
+              </div>
             ))}
-          </ul>
+          </div>
+        </div>
+
+        <div className="card fade-in" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700 }}>Current Medicines</h2>
+            <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+              Show archived
+            </label>
+          </div>
+
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price/Strip</th>
+                <th>Strips/Carton</th>
+                <th>Remaining</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((p) => (
+                <tr key={p.id} style={{ opacity: p.archived ? 0.5 : 1 }}>
+                  <td>
+                    {editingId === p.id ? (
+                      <input className="input" value={editName} onChange={(e) => setEditName(e.target.value)} style={{ width: 120 }} />
+                    ) : (
+                      p.name
+                    )}
+                  </td>
+                  <td>{p.category?.name ?? '—'}{p.subcategory ? ` / ${p.subcategory.name}` : ''}</td>
+                  <td>
+                    {editingId === p.id ? (
+                      <input className="input" type="number" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ width: 80 }} />
+                    ) : (
+                      `${p.pricePerStrip} Birr`
+                    )}
+                  </td>
+                  <td>{p.stripsPerCarton}</td>
+                  <td>
+                    <span className={`badge ${(p.batches[0]?.remainingStrips ?? 0) === 0 ? 'badge-danger' : (p.batches[0]?.remainingStrips ?? 0) <= 20 ? 'badge-warning' : 'badge-neutral'}`}>
+                      {p.batches[0]?.remainingStrips ?? 0}
+                    </span>
+                  </td>
+                  <td>
+                    {editingId === p.id ? (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => saveEdit(p.id)} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: 13 }}>Save</button>
+                        <button onClick={() => setEditingId(null)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Cancel</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => startEdit(p)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Edit</button>
+                        <button onClick={() => toggleArchive(p)} className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }}>
+                          {p.archived ? 'Unarchive' : 'Archive'}
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Current Medicines</h2>
-        <label>
-          <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-          {' '}Show archived
-        </label>
-      </div>
-
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Name</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Category</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Price/Strip</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Strips/Carton</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Remaining</th>
-            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}></th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((p) => (
-            <tr key={p.id} style={{ opacity: p.archived ? 0.5 : 1 }}>
-              <td>
-                {editingId === p.id ? (
-                  <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ padding: 4, width: 100 }} />
-                ) : (
-                  p.name
-                )}
-              </td>
-              <td>{p.category?.name ?? '—'}{p.subcategory ? ` / ${p.subcategory.name}` : ''}</td>
-              <td>
-                {editingId === p.id ? (
-                  <input type="number" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ padding: 4, width: 70 }} />
-                ) : (
-                  p.pricePerStrip
-                )}
-              </td>
-              <td>{p.stripsPerCarton}</td>
-              <td>{p.batches[0]?.remainingStrips ?? 0}</td>
-              <td>
-                {editingId === p.id ? (
-                  <>
-                    <button onClick={() => saveEdit(p.id)} style={{ marginRight: 4 }}>Save</button>
-                    <button onClick={() => setEditingId(null)}>Cancel</button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => startEdit(p)} style={{ marginRight: 4 }}>Edit</button>
-                    <button onClick={() => toggleArchive(p)}>{p.archived ? 'Unarchive' : 'Archive'}</button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   )
 }
