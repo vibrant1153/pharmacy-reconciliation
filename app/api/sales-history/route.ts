@@ -14,7 +14,7 @@ export async function GET() {
     where: isOwner ? {} : { employeeId: session.userId },
     include: {
       employee: { select: { name: true } },
-      items: { include: { batch: { include: { product: true } } } },
+      items: { include: { batch: { include: { product: true } }, packagingLevel: true } },
     },
     orderBy: { createdAt: 'desc' },
     take: 100,
@@ -28,8 +28,9 @@ export async function GET() {
     createdAt: sale.createdAt,
     items: sale.items.map((item) => ({
       productName: item.batch.product.name,
-      quantity: item.quantity,
-      pricePerStrip: Number(item.pricePerStrip),
+      quantity: item.quantitySold,
+      pricePerStrip: Number(item.pricePerUnit),
+      levelName: item.packagingLevel.name,
     })),
   }))
 
