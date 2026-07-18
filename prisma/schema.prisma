@@ -112,9 +112,10 @@ model SaleItem {
   productId         String
   packagingLevelId  String
   packagingLevel    PackagingLevel @relation(fields: [packagingLevelId], references: [id])
-  quantitySold       Int           // quantity at the level that was sold (e.g. 2 strips)
-  baseUnitsConsumed  Int           // resolved into base units, for stock decrement
-  pricePerUnit       Decimal       @db.Decimal(10, 2)
+  quantitySold      Int
+  baseUnitsConsumed Int
+  pricePerUnit      Decimal        @db.Decimal(10, 2)
+  profit            Decimal        @db.Decimal(10, 2)
 }
 
 model AuditLog {
@@ -156,3 +157,20 @@ enum AlertStatus {
   OPEN
   DISMISSED
 }
+
+model PackagingLevel {
+  id               String     @id @default(cuid())
+  productId        String
+  product          Product    @relation(fields: [productId], references: [id])
+  name             String
+  order            Int
+  quantityInParent Int?
+  isSellable       Boolean    @default(true)
+  isBaseUnit       Boolean    @default(false)
+  price            Decimal?   @db.Decimal(10, 2)
+  purchasePrice    Decimal?   @db.Decimal(10, 2)
+  saleItems        SaleItem[]
+
+  @@unique([productId, order])
+}
+

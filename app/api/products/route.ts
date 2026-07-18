@@ -11,12 +11,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const {
-    name,
-    categoryId,
-    subcategoryId,
-    boxName, boxPrice, boxSellable,
-    stripName, stripsPerBox, stripPrice, stripSellable,
-    tabletName, tabletsPerStrip, tabletPrice, tabletSellable,
+    name, categoryId, subcategoryId,
+    boxName, boxPrice, boxPurchasePrice, boxSellable,
+    stripName, stripsPerBox, stripPrice, stripPurchasePrice, stripSellable,
+    tabletName, tabletsPerStrip, tabletPrice, tabletPurchasePrice, tabletSellable,
     startingBoxes,
   } = body
 
@@ -34,28 +32,22 @@ export async function POST(req: NextRequest) {
       packagingLevels: {
         create: [
           {
-            name: boxName || 'Box',
-            order: 0,
-            quantityInParent: null,
-            isSellable: !!boxSellable,
-            isBaseUnit: false,
+            name: boxName || 'Box', order: 0, quantityInParent: null,
+            isSellable: !!boxSellable, isBaseUnit: false,
             price: boxSellable ? boxPrice : null,
+            purchasePrice: boxPurchasePrice || null,
           },
           {
-            name: stripName || 'Strip',
-            order: 1,
-            quantityInParent: stripsPerBox,
-            isSellable: !!stripSellable,
-            isBaseUnit: false,
+            name: stripName || 'Strip', order: 1, quantityInParent: stripsPerBox,
+            isSellable: !!stripSellable, isBaseUnit: false,
             price: stripSellable ? stripPrice : null,
+            purchasePrice: stripPurchasePrice || null,
           },
           {
-            name: tabletName || 'Tablet',
-            order: 2,
-            quantityInParent: tabletsPerStrip,
-            isSellable: !!tabletSellable,
-            isBaseUnit: true,
+            name: tabletName || 'Tablet', order: 2, quantityInParent: tabletsPerStrip,
+            isSellable: !!tabletSellable, isBaseUnit: true,
             price: tabletSellable ? tabletPrice : null,
+            purchasePrice: tabletPurchasePrice || null,
           },
         ],
       },
@@ -89,11 +81,14 @@ export async function GET(req: NextRequest) {
   }
 
   const includeArchived = req.nextUrl.searchParams.get('includeArchived') === 'true'
+  const isOwner = session.role === 'OWNER'
 
   const products = await prisma.product.findMany({
     where: includeArchived ? {} : { archived: false },
     include: {
-      packagingLevels: { orderBy: { order: 'asc' } },
+      packagingLevels: isOwner
+        ? { orderBy: { order: 'asc' } }
+        : { orderBy: { order: 'asc' }, omit: { purchasePrice: true } },
       batches: { where: { status: 'ACTIVE' } },
       category: true,
       subcategory: true,
