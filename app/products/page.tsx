@@ -9,15 +9,24 @@ interface Category {
   subcategories: { id: string; name: string }[]
 }
 
+interface PackagingLevel {
+  id: string
+  name: string
+  order: number
+  quantityInParent: number | null
+  isSellable: boolean
+  isBaseUnit: boolean
+  price: string | null
+}
+
 interface Product {
   id: string
   name: string
-  pricePerStrip: string
-  stripsPerCarton: number
   archived: boolean
   category: { id: string; name: string } | null
   subcategory: { id: string; name: string } | null
-  batches: { remainingStrips: number }[]
+  packagingLevels: PackagingLevel[]
+  batches: { remainingBaseUnits: number; totalBaseUnits: number }[]
 }
 
 export default function ProductsPage() {
@@ -26,11 +35,24 @@ export default function ProductsPage() {
   const [showArchived, setShowArchived] = useState(false)
 
   const [name, setName] = useState('')
-  const [pricePerStrip, setPricePerStrip] = useState('')
-  const [stripsPerCarton, setStripsPerCarton] = useState('')
-  const [startingCartons, setStartingCartons] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [subcategoryId, setSubcategoryId] = useState('')
+
+  const [boxName, setBoxName] = useState('Box')
+  const [boxPrice, setBoxPrice] = useState('')
+  const [boxSellable, setBoxSellable] = useState(false)
+
+  const [stripName, setStripName] = useState('Strip')
+  const [stripsPerBox, setStripsPerBox] = useState('')
+  const [stripPrice, setStripPrice] = useState('')
+  const [stripSellable, setStripSellable] = useState(true)
+
+  const [tabletName, setTabletName] = useState('Tablet')
+  const [tabletsPerStrip, setTabletsPerStrip] = useState('')
+  const [tabletPrice, setTabletPrice] = useState('')
+  const [tabletSellable, setTabletSellable] = useState(false)
+
+  const [startingBoxes, setStartingBoxes] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -40,7 +62,6 @@ export default function ProductsPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
-  const [editPrice, setEditPrice] = useState('')
 
   async function loadProducts() {
     const res = await fetch(`/api/products?includeArchived=${showArchived}`)
@@ -62,6 +83,12 @@ export default function ProductsPage() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    if (!boxSellable && !stripSellable && !tabletSellable) {
+      setError('At least one packaging level must be sellable.')
+      return
+    }
+
     setLoading(true)
 
     const res = await fetch('/api/products', {
@@ -69,11 +96,12 @@ export default function ProductsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
-        pricePerStrip: parseFloat(pricePerStrip),
-        stripsPerCarton: parseInt(stripsPerCarton),
-        startingCartons: parseInt(startingCartons),
         categoryId: categoryId || null,
         subcategoryId: subcategoryId || null,
+        boxName, boxPrice: boxPrice ? parseFloat(boxPrice) : null, boxSellable,
+        stripName, stripsPerBox: parseInt(stripsPerBox), stripPrice: stripPrice ? parseFloat(stripPrice) : null, stripSellable,
+        tabletName, tabletsPerStrip: parseInt(tabletsPerStrip), tabletPrice: tabletPrice ? parseFloat(tabletPrice) : null, tabletSellable,
+        startingBoxes: parseInt(startingBoxes),
       }),
     })
     const data = await res.json()
@@ -85,9 +113,12 @@ export default function ProductsPage() {
     }
 
     setName('')
-    setPricePerStrip('')
-    setStripsPerCarton('')
-    setStartingCartons('')
+    setBoxPrice('')
+    setStripsPerBox('')
+    setStripPrice('')
+    setTabletsPerStrip('')
+    setTabletPrice('')
+    setStartingBoxes('')
     setCategoryId('')
     setSubcategoryId('')
     loadProducts()
@@ -96,7 +127,6 @@ export default function ProductsPage() {
   async function addCategory(e: React.FormEvent) {
     e.preventDefault()
     if (!newCategoryName.trim()) return
-
     await fetch('/api/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -109,7 +139,6 @@ export default function ProductsPage() {
   async function addSubcategory(e: React.FormEvent) {
     e.preventDefault()
     if (!newSubcategoryName.trim() || !subcategoryParentId) return
-
     await fetch(`/api/categories/${subcategoryParentId}/subcategories`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -122,22 +151,19 @@ export default function ProductsPage() {
   function startEdit(product: Product) {
     setEditingId(product.id)
     setEditName(product.name)
-    setEditPrice(product.pricePerStrip)
   }
 
   async function saveEdit(id: string) {
     const res = await fetch(`/api/products/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editName, pricePerStrip: parseFloat(editPrice) }),
+      body: JSON.stringify({ name: editName }),
     })
     const data = await res.json()
-
     if (!data.success) {
       alert(data.message)
       return
     }
-
     setEditingId(null)
     loadProducts()
   }
@@ -161,34 +187,20 @@ export default function ProductsPage() {
           Medicine Management
         </h1>
 
-        <div style={{ display: 'flex', gap: 20, marginBottom: 32, alignItems: 'flex-start' }}>
-          <form onSubmit={handleAdd} className="card fade-in" style={{ padding: 24, width: 300, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 20, marginBottom: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <form onSubmit={handleAdd} className="card fade-in" style={{ padding: 24, width: 340, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700 }}>Add Medicine</h3>
 
             <div>
               <label className="label">Medicine name</label>
               <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-            <div>
-              <label className="label">Price per strip (Birr)</label>
-              <input className="input" type="number" step="0.01" value={pricePerStrip} onChange={(e) => setPricePerStrip(e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Strips per carton</label>
-              <input className="input" type="number" value={stripsPerCarton} onChange={(e) => setStripsPerCarton(e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Starting cartons</label>
-              <input className="input" type="number" value={startingCartons} onChange={(e) => setStartingCartons(e.target.value)} />
-            </div>
 
             <div>
               <label className="label">Category</label>
               <select className="input" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubcategoryId('') }}>
                 <option value="">No category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
 
@@ -197,12 +209,54 @@ export default function ProductsPage() {
                 <label className="label">Subcategory</label>
                 <select className="input" value={subcategoryId} onChange={(e) => setSubcategoryId(e.target.value)}>
                   <option value="">No subcategory</option>
-                  {selectedCategoryForForm.subcategories.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
+                  {selectedCategoryForForm.subcategories.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
             )}
+
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Level 1 — {boxName}</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                <input className="input" placeholder="Name" value={boxName} onChange={(e) => setBoxName(e.target.value)} style={{ flex: 1 }} />
+                <input className="input" type="number" step="0.01" placeholder="Price" value={boxPrice} onChange={(e) => setBoxPrice(e.target.value)} disabled={!boxSellable} style={{ width: 90 }} />
+              </div>
+              <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                <input type="checkbox" checked={boxSellable} onChange={(e) => setBoxSellable(e.target.checked)} /> Sellable at this level
+              </label>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Level 2 — {stripName}</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                <input className="input" placeholder="Name" value={stripName} onChange={(e) => setStripName(e.target.value)} style={{ flex: 1 }} />
+                <input className="input" type="number" placeholder={`per ${boxName}`} value={stripsPerBox} onChange={(e) => setStripsPerBox(e.target.value)} style={{ width: 90 }} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                <input className="input" type="number" step="0.01" placeholder="Price" value={stripPrice} onChange={(e) => setStripPrice(e.target.value)} disabled={!stripSellable} />
+              </div>
+              <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                <input type="checkbox" checked={stripSellable} onChange={(e) => setStripSellable(e.target.checked)} /> Sellable at this level
+              </label>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Level 3 — {tabletName} (base unit)</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                <input className="input" placeholder="Name" value={tabletName} onChange={(e) => setTabletName(e.target.value)} style={{ flex: 1 }} />
+                <input className="input" type="number" placeholder={`per ${stripName}`} value={tabletsPerStrip} onChange={(e) => setTabletsPerStrip(e.target.value)} style={{ width: 90 }} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                <input className="input" type="number" step="0.01" placeholder="Price" value={tabletPrice} onChange={(e) => setTabletPrice(e.target.value)} disabled={!tabletSellable} />
+              </div>
+              <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                <input type="checkbox" checked={tabletSellable} onChange={(e) => setTabletSellable(e.target.checked)} /> Sellable at this level
+              </label>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+              <label className="label">Starting {boxName}s in stock</label>
+              <input className="input" type="number" value={startingBoxes} onChange={(e) => setStartingBoxes(e.target.value)} />
+            </div>
 
             {error && <div className="badge badge-danger">{error}</div>}
             <button type="submit" disabled={loading} className="btn btn-primary">
@@ -212,32 +266,25 @@ export default function ProductsPage() {
 
           <div className="card fade-in" style={{ padding: 24, width: 280 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Categories</h3>
-
             <form onSubmit={addCategory} style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
               <input className="input" placeholder="New category" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} />
-              <button type="submit" className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }}>Add</button>
+              <button type="submit" className="btn btn-secondary">Add</button>
             </form>
-
             <form onSubmit={addSubcategory} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               <select className="input" value={subcategoryParentId} onChange={(e) => setSubcategoryParentId(e.target.value)}>
                 <option value="">Select category...</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input className="input" placeholder="New subcategory" value={newSubcategoryName} onChange={(e) => setNewSubcategoryName(e.target.value)} />
-                <button type="submit" className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }}>Add</button>
+                <button type="submit" className="btn btn-secondary">Add</button>
               </div>
             </form>
-
             {categories.map((c) => (
               <div key={c.id} style={{ marginBottom: 8 }}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</div>
                 {c.subcategories.map((s) => (
-                  <div key={s.id} style={{ fontSize: 12, color: 'var(--color-text-secondary)', paddingLeft: 12 }}>
-                    {s.name}
-                  </div>
+                  <div key={s.id} style={{ fontSize: 12, color: 'var(--color-text-secondary)', paddingLeft: 12 }}>{s.name}</div>
                 ))}
               </div>
             ))}
@@ -247,9 +294,8 @@ export default function ProductsPage() {
         <div className="card fade-in" style={{ padding: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700 }}>Current Medicines</h2>
-            <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-              Show archived
+            <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+              <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived
             </label>
           </div>
 
@@ -258,53 +304,48 @@ export default function ProductsPage() {
               <tr>
                 <th>Name</th>
                 <th>Category</th>
-                <th>Price/Strip</th>
-                <th>Strips/Carton</th>
-                <th>Remaining</th>
+                <th>Packaging</th>
+                <th>Remaining (base units)</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
-                <tr key={p.id} style={{ opacity: p.archived ? 0.5 : 1 }}>
-                  <td>
-                    {editingId === p.id ? (
-                      <input className="input" value={editName} onChange={(e) => setEditName(e.target.value)} style={{ width: 120 }} />
-                    ) : (
-                      p.name
-                    )}
-                  </td>
-                  <td>{p.category?.name ?? '—'}{p.subcategory ? ` / ${p.subcategory.name}` : ''}</td>
-                  <td>
-                    {editingId === p.id ? (
-                      <input className="input" type="number" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ width: 80 }} />
-                    ) : (
-                      `${p.pricePerStrip} Birr`
-                    )}
-                  </td>
-                  <td>{p.stripsPerCarton}</td>
-                  <td>
-                    <span className={`badge ${(p.batches[0]?.remainingStrips ?? 0) === 0 ? 'badge-danger' : (p.batches[0]?.remainingStrips ?? 0) <= 20 ? 'badge-warning' : 'badge-neutral'}`}>
-                      {p.batches[0]?.remainingStrips ?? 0}
-                    </span>
-                  </td>
-                  <td>
-                    {editingId === p.id ? (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => saveEdit(p.id)} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: 13 }}>Save</button>
-                        <button onClick={() => setEditingId(null)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Cancel</button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => startEdit(p)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Edit</button>
-                        <button onClick={() => toggleArchive(p)} className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }}>
-                          {p.archived ? 'Unarchive' : 'Archive'}
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {products.map((p) => {
+                const remaining = p.batches[0]?.remainingBaseUnits ?? 0
+                return (
+                  <tr key={p.id} style={{ opacity: p.archived ? 0.5 : 1 }}>
+                    <td>
+                      {editingId === p.id ? (
+                        <input className="input" value={editName} onChange={(e) => setEditName(e.target.value)} style={{ width: 120 }} />
+                      ) : p.name}
+                    </td>
+                    <td>{p.category?.name ?? '—'}{p.subcategory ? ` / ${p.subcategory.name}` : ''}</td>
+                    <td style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                      {p.packagingLevels.map((lvl) => `${lvl.name}${lvl.isSellable ? ` (${lvl.price} Birr)` : ''}`).join(' → ')}
+                    </td>
+                    <td>
+                      <span className={`badge ${remaining === 0 ? 'badge-danger' : remaining <= 50 ? 'badge-warning' : 'badge-neutral'}`}>
+                        {remaining}
+                      </span>
+                    </td>
+                    <td>
+                      {editingId === p.id ? (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button onClick={() => saveEdit(p.id)} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: 13 }}>Save</button>
+                          <button onClick={() => setEditingId(null)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Cancel</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button onClick={() => startEdit(p)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Edit</button>
+                          <button onClick={() => toggleArchive(p)} className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }}>
+                            {p.archived ? 'Unarchive' : 'Archive'}
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
