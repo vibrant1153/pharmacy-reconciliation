@@ -12,14 +12,8 @@ export async function GET() {
   startOfToday.setHours(0, 0, 0, 0)
 
   const todaySales = await prisma.sale.findMany({
-    where: {
-      createdAt: { gte: startOfToday },
-      voided: false,
-    },
-    include: {
-      items: true,
-      employee: { select: { name: true } },
-    },
+    where: { createdAt: { gte: startOfToday }, voided: false },
+    include: { items: true, employee: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -31,24 +25,26 @@ export async function GET() {
     include: { batches: { where: { status: 'ACTIVE' } } },
   })
 
-  const lowStockThreshold = 20 // temporary hardcoded value; Stage 12 (Settings) will make this configurable
+  const lowStockThreshold = 20 // temporary; Stage 12 (Settings) will make this configurable
   const lowStock = products
     .filter((p) => {
-      const remaining = p.batches[0]?.remainingStrips ?? 0
+      const remaining = p.batches[0]?.remainingBaseUnits ?? 0
       return remaining > 0 && remaining <= lowStockThreshold
     })
-    .map((p) => ({ name: p.name, remaining: p.batches[0]?.remainingStrips ?? 0 }))
+    .map((p) => ({ name: p.name, remaining: p.batches[0]?.remainingBaseUnits ?? 0 }))
 
   const outOfStock = products
-    .filter((p) => (p.batches[0]?.remainingStrips ?? 0) === 0)
+    .filter((p) => (p.batches[0]?.remainingBaseUnits ?? 0) === 0 && p.batches.length === 0)
     .map((p) => ({ name: p.name }))
 
   const recentActivity = todaySales.slice(0, 10).map((sale) => ({
     employeeName: sale.employee.name,
-    itemCount: sale.items.reduce((sum, i) => sum + i.quantity, 0),
+    itemCount: sale.items.reduce((sum, i) => sum + i.quantitySold, 0),
     total: Number(sale.total),
     time: sale.createdAt,
   }))
+
+  const openAlertsCount = await prisma.alert.count({ where: { status: 'OPEN' } })
 
   return NextResponse.json({
     success: true,
@@ -57,5 +53,6 @@ export async function GET() {
     lowStock,
     outOfStock,
     recentActivity,
+    openAlertsCount,
   })
 }
