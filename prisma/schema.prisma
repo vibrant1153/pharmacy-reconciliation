@@ -61,12 +61,13 @@ model PackagingLevel {
   id               String     @id @default(cuid())
   productId        String
   product          Product    @relation(fields: [productId], references: [id])
-  name             String     // "Box", "Strip", "Tablet"
-  order            Int        // 0 = top of chain
-  quantityInParent Int?       // how many of this = 1 of the level above; null for order 0
+  name             String
+  order            Int
+  quantityInParent Int?
   isSellable       Boolean    @default(true)
-  isBaseUnit       Boolean    @default(false) // true for the smallest physical unit
-  price            Decimal?   @db.Decimal(10, 2) // set only where isSellable = true
+  isBaseUnit       Boolean    @default(false)
+  price            Decimal?   @db.Decimal(10, 2)
+  purchasePrice    Decimal?   @db.Decimal(10, 2)
   saleItems        SaleItem[]
 
   @@unique([productId, order])
@@ -158,19 +159,5 @@ enum AlertStatus {
   DISMISSED
 }
 
-model PackagingLevel {
-  id               String     @id @default(cuid())
-  productId        String
-  product          Product    @relation(fields: [productId], references: [id])
-  name             String
-  order            Int
-  quantityInParent Int?
-  isSellable       Boolean    @default(true)
-  isBaseUnit       Boolean    @default(false)
-  price            Decimal?   @db.Decimal(10, 2)
-  purchasePrice    Decimal?   @db.Decimal(10, 2)
-  saleItems        SaleItem[]
 
-  @@unique([productId, order])
-}
 
