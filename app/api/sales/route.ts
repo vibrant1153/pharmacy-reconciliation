@@ -30,10 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, message: 'This packaging level is not sellable.' }, { status: 400 })
   }
 
-  const batch = await prisma.batch.findFirst({
-    where: { productId, status: 'ACTIVE' },
-  })
-
+  const batch = await prisma.batch.findFirst({ where: { productId, status: 'ACTIVE' } })
   if (!batch) {
     return NextResponse.json({ success: false, message: 'No active stock for this product.' }, { status: 400 })
   }
@@ -47,6 +44,8 @@ export async function POST(req: NextRequest) {
 
   const pricePerUnit = level.price
   const total = Number(pricePerUnit) * quantity
+  const costPerUnit = level.purchasePrice ? Number(level.purchasePrice) : 0
+  const profit = (Number(pricePerUnit) - costPerUnit) * quantity
 
   const result = await prisma.$transaction(async (tx) => {
     const newRemaining = batch.remainingBaseUnits - baseUnitsConsumed
@@ -63,6 +62,7 @@ export async function POST(req: NextRequest) {
             quantitySold: quantity,
             baseUnitsConsumed,
             pricePerUnit,
+            profit,
           },
         },
       },
@@ -70,37 +70,19 @@ export async function POST(req: NextRequest) {
     })
 
     if (newRemaining === 0) {
-      // expectedRevenue uses the price of the level that this batch's base units were opened as —
-      // simplest consistent approach: value the whole batch at whichever level was actually sold.
-      // Good enough for MVP; a batch sold via mixed levels would need a smarter valuation later.
       const expectedRevenue = (batch.totalBaseUnits / unitsPerLevel) * Number(pricePerUnit)
 
       await tx.batch.update({
         where: { id: batch.id },
-        data: {
-          remainingBaseUnits: 0,
-          status: 'COMPLETED',
-          closedAt: new Date(),
-          expectedRevenue,
-        },
+        data: { remainingBaseUnits: 0, status: 'COMPLETED', closedAt: new Date(), expectedRevenue },
       })
 
-      const nextBatch = await tx.batch.findFirst({
-        where: { productId, status: 'PENDING' },
-        orderBy: { createdAt: 'asc' },
-      })
-
+      const nextBatch = await tx.batch.findFirst({ where: { productId, status: 'PENDING' }, orderBy: { createdAt: 'asc' } })
       if (nextBatch) {
-        await tx.batch.update({
-          where: { id: nextBatch.id },
-          data: { status: 'ACTIVE' },
-        })
+        await tx.batch.update({ where: { id: nextBatch.id }, data: { status: 'ACTIVE' } })
       }
     } else {
-      await tx.batch.update({
-        where: { id: batch.id },
-        data: { remainingBaseUnits: newRemaining },
-      })
+      await tx.batch.update({ where: { id: batch.id }, data: { remainingBaseUnits: newRemaining } })
     }
 
     return sale
