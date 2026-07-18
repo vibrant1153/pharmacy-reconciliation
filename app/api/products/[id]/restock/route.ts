@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOwner } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
+import { baseUnitsPerLevel } from '@/lib/packaging'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireOwner()
@@ -16,10 +17,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ success: false, message: 'Invalid carton count.' }, { status: 400 })
   }
 
-  const product = await prisma.product.findUnique({ where: { id } })
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: { packagingLevels: true },
+  })
   if (!product) {
     return NextResponse.json({ success: false, message: 'Product not found.' }, { status: 404 })
   }
+
+  const topLevel = product.packagingLevels.find((l) => l.order === 0)
+  if (!topLevel) {
+    return NextResponse.json({ success: false, message: 'Product has no packaging chain.' }, { status: 400 })
+  }
+
+  const baseUnitsPerCarton = baseUnitsPerLevel(product.packagingLevels, 0)
+  const totalBaseUnits = cartons * baseUnitsPerCarton
 
   const hasActive = await prisma.batch.findFirst({ where: { productId: id, status: 'ACTIVE' } })
 
@@ -27,7 +39,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     data: {
       productId: id,
       cartonsAdded: cartons,
-      remainingStrips: cartons * product.stripsPerCarton,
+      totalBaseUnits,
+      remainingBaseUnits: totalBaseUnits,
       status: hasActive ? 'PENDING' : 'ACTIVE',
     },
   })
@@ -37,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     action: 'BATCH_ADDED',
     entity: 'Batch',
     entityId: batch.id,
-    newValue: `${cartons} cartons added for ${product.name}`,
+    newValue: `${cartons} ${topLevel.name}(s) added for ${product.name}`,
   })
 
   return NextResponse.json({ success: true, batch })
