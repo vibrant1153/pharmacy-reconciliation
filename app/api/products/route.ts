@@ -13,12 +13,12 @@ export async function POST(req: NextRequest) {
   const {
     name, categoryId, subcategoryId,
     boxName, boxPrice, boxPurchasePrice, boxSellable,
-    stripName, stripsPerBox, stripPrice, stripPurchasePrice, stripSellable,
-    tabletName, tabletsPerStrip, tabletPrice, tabletPurchasePrice, tabletSellable,
+    stripName, stripsPerBox, stripPrice, stripSellable,
+    tabletName, tabletsPerStrip, tabletPrice, tabletSellable,
     startingBoxes,
   } = body
 
-  if (!name || !stripsPerBox || !tabletsPerStrip || !startingBoxes) {
+  if (!name || !stripsPerBox || !tabletsPerStrip || !startingBoxes || !boxPurchasePrice) {
     return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 })
   }
 
@@ -35,19 +35,19 @@ export async function POST(req: NextRequest) {
             name: boxName || 'Box', order: 0, quantityInParent: null,
             isSellable: !!boxSellable, isBaseUnit: false,
             price: boxSellable ? boxPrice : null,
-            purchasePrice: boxPurchasePrice || null,
+            purchasePrice: boxPurchasePrice,
           },
           {
             name: stripName || 'Strip', order: 1, quantityInParent: stripsPerBox,
             isSellable: !!stripSellable, isBaseUnit: false,
             price: stripSellable ? stripPrice : null,
-            purchasePrice: stripPurchasePrice || null,
+            purchasePrice: null,
           },
           {
             name: tabletName || 'Tablet', order: 2, quantityInParent: tabletsPerStrip,
             isSellable: !!tabletSellable, isBaseUnit: true,
             price: tabletSellable ? tabletPrice : null,
-            purchasePrice: tabletPurchasePrice || null,
+            purchasePrice: null,
           },
         ],
       },
