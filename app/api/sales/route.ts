@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, message: 'This packaging level is not sellable.' }, { status: 400 })
   }
 
+  const boxLevel = product.packagingLevels.find((l) => l.order === 0)
+
   const batch = await prisma.batch.findFirst({ where: { productId, status: 'ACTIVE' } })
   if (!batch) {
     return NextResponse.json({ success: false, message: 'No active stock for this product.' }, { status: 400 })
@@ -44,8 +46,13 @@ export async function POST(req: NextRequest) {
 
   const pricePerUnit = level.price
   const total = Number(pricePerUnit) * quantity
-  const costPerUnit = level.purchasePrice ? Number(level.purchasePrice) : 0
-  const profit = (Number(pricePerUnit) - costPerUnit) * quantity
+
+  // Cost basis: box purchase price ÷ base units per box = cost per base unit,
+  // then × units-per-level to get cost at whatever level was actually sold.
+  const baseUnitsPerBox = baseUnitsPerLevel(product.packagingLevels, 0)
+  const costPerBaseUnit = boxLevel?.purchasePrice ? Number(boxLevel.purchasePrice) / baseUnitsPerBox : 0
+  const costPerSoldUnit = costPerBaseUnit * unitsPerLevel
+  const profit = (Number(pricePerUnit) - costPerSoldUnit) * quantity
 
   const result = await prisma.$transaction(async (tx) => {
     const newRemaining = batch.remainingBaseUnits - baseUnitsConsumed
