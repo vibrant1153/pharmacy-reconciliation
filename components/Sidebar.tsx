@@ -8,6 +8,7 @@ const ownerLinks = [
   { href: '/products', label: 'Medicine Management' },
   { href: '/history', label: 'Sales History' },
   { href: '/reconciliation', label: 'Reconciliation' },
+  { href: '/alerts', label: 'Alerts' },
   { href: '/audit', label: 'Audit History' },
 ]
 
