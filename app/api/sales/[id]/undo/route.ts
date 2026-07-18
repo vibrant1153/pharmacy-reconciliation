@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     for (const item of sale.items) {
       await tx.batch.update({
         where: { id: item.batchId },
-        data: { remainingStrips: { increment: item.quantity } },
+        data: { remainingBaseUnits: { increment: item.baseUnitsConsumed } },
       })
     }
     await tx.sale.update({ where: { id }, data: { voided: true } })
