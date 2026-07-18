@@ -135,3 +135,24 @@ model DailyReconciliation {
   actualCash Decimal  @db.Decimal(10, 2)
   createdAt  DateTime @default(now())
 }
+
+model Alert {
+  id        String      @id @default(cuid())
+  type      AlertType
+  productId String?
+  batchId   String?
+  message   String
+  status    AlertStatus @default(OPEN)
+  createdAt DateTime    @default(now())
+}
+
+enum AlertType {
+  LOW_STOCK
+  DISCREPANCY
+  STALE_ITEM
+}
+
+enum AlertStatus {
+  OPEN
+  DISMISSED
+}
