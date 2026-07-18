@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { baseUnitsPerLevel } from '@/lib/packaging'
 
 interface PackagingLevel {
   id: string
   name: string
+  order: number
+  quantityInParent: number | null
   isSellable: boolean
   price: string | null
 }
@@ -114,10 +117,13 @@ export default function SalesPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
           {products.map((p) => {
-            const remaining = p.batches[0]?.remainingBaseUnits ?? 0
-            const isOut = remaining === 0
+            const remainingBaseUnits = p.batches[0]?.remainingBaseUnits ?? 0
+            const isOut = remainingBaseUnits === 0
             const sellableLevels = p.packagingLevels.filter((l) => l.isSellable)
             const displayLevel = sellableLevels[0]
+
+            const unitsPerDisplayLevel = displayLevel ? baseUnitsPerLevel(p.packagingLevels, displayLevel.order) : 1
+            const remainingAtDisplayLevel = displayLevel ? Math.floor(remainingBaseUnits / unitsPerDisplayLevel) : 0
 
             return (
               <button
@@ -131,9 +137,18 @@ export default function SalesPage() {
                 <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-primary)', marginBottom: 6 }}>
                   {displayLevel ? `${displayLevel.price} Birr / ${displayLevel.name}` : 'No price set'}
                 </div>
-                <span className={`badge ${isOut ? 'badge-danger' : remaining <= 50 ? 'badge-warning' : 'badge-neutral'}`}>
-                  {isOut ? 'Out of stock' : `${remaining} units left`}
+                <span className={`badge ${isOut ? 'badge-danger' : remainingAtDisplayLevel <= 5 ? 'badge-warning' : 'badge-neutral'}`}>
+                  {isOut
+                    ? 'Out of stock'
+                    : displayLevel
+                    ? `${remainingAtDisplayLevel} ${displayLevel.name}${remainingAtDisplayLevel !== 1 ? 's' : ''} left`
+                    : `${remainingBaseUnits} units left`}
                 </span>
+                {displayLevel && (
+                  <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                    ({remainingBaseUnits} base units)
+                  </div>
+                )}
               </button>
             )
           })}
