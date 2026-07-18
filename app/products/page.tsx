@@ -47,13 +47,11 @@ export default function ProductsPage() {
   const [stripName, setStripName] = useState('Strip')
   const [stripsPerBox, setStripsPerBox] = useState('')
   const [stripPrice, setStripPrice] = useState('')
-  const [stripPurchasePrice, setStripPurchasePrice] = useState('')
   const [stripSellable, setStripSellable] = useState(true)
 
   const [tabletName, setTabletName] = useState('Tablet')
   const [tabletsPerStrip, setTabletsPerStrip] = useState('')
   const [tabletPrice, setTabletPrice] = useState('')
-  const [tabletPurchasePrice, setTabletPurchasePrice] = useState('')
   const [tabletSellable, setTabletSellable] = useState(false)
 
   const [startingBoxes, setStartingBoxes] = useState('')
@@ -92,6 +90,10 @@ export default function ProductsPage() {
       setError('At least one packaging level must be sellable.')
       return
     }
+    if (!boxPurchasePrice) {
+      setError('Box purchase price (cost from supplier) is required.')
+      return
+    }
 
     setLoading(true)
 
@@ -102,9 +104,9 @@ export default function ProductsPage() {
         name,
         categoryId: categoryId || null,
         subcategoryId: subcategoryId || null,
-        boxName, boxPrice: boxPrice ? parseFloat(boxPrice) : null, boxPurchasePrice: boxPurchasePrice ? parseFloat(boxPurchasePrice) : null, boxSellable,
-        stripName, stripsPerBox: parseInt(stripsPerBox), stripPrice: stripPrice ? parseFloat(stripPrice) : null, stripPurchasePrice: stripPurchasePrice ? parseFloat(stripPurchasePrice) : null, stripSellable,
-        tabletName, tabletsPerStrip: parseInt(tabletsPerStrip), tabletPrice: tabletPrice ? parseFloat(tabletPrice) : null, tabletPurchasePrice: tabletPurchasePrice ? parseFloat(tabletPurchasePrice) : null, tabletSellable,
+        boxName, boxPrice: boxPrice ? parseFloat(boxPrice) : null, boxPurchasePrice: parseFloat(boxPurchasePrice), boxSellable,
+        stripName, stripsPerBox: parseInt(stripsPerBox), stripPrice: stripPrice ? parseFloat(stripPrice) : null, stripSellable,
+        tabletName, tabletsPerStrip: parseInt(tabletsPerStrip), tabletPrice: tabletPrice ? parseFloat(tabletPrice) : null, tabletSellable,
         startingBoxes: parseInt(startingBoxes),
       }),
     })
@@ -118,8 +120,8 @@ export default function ProductsPage() {
 
     setName('')
     setBoxPrice(''); setBoxPurchasePrice('')
-    setStripsPerBox(''); setStripPrice(''); setStripPurchasePrice('')
-    setTabletsPerStrip(''); setTabletPrice(''); setTabletPurchasePrice('')
+    setStripsPerBox(''); setStripPrice('')
+    setTabletsPerStrip(''); setTabletPrice('')
     setStartingBoxes('')
     setCategoryId('')
     setSubcategoryId('')
@@ -190,7 +192,7 @@ export default function ProductsPage() {
         </h1>
 
         <div style={{ display: 'flex', gap: 20, marginBottom: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <form onSubmit={handleAdd} className="card fade-in" style={{ padding: 24, width: 360, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <form onSubmit={handleAdd} className="card fade-in" style={{ padding: 24, width: 340, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700 }}>Add Medicine</h3>
 
             <div>
@@ -217,11 +219,14 @@ export default function ProductsPage() {
             )}
 
             <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 4 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Level 1 — {boxName}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Level 1 — {boxName} (purchase unit)</div>
               <input className="input" placeholder="Name" value={boxName} onChange={(e) => setBoxName(e.target.value)} style={{ marginBottom: 6 }} />
-              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-                <input className="input" type="number" step="0.01" placeholder="Sell price" value={boxPrice} onChange={(e) => setBoxPrice(e.target.value)} disabled={!boxSellable} />
-                <input className="input" type="number" step="0.01" placeholder="Purchase price" value={boxPurchasePrice} onChange={(e) => setBoxPurchasePrice(e.target.value)} />
+              <div>
+                <label className="label">Purchase price (cost from supplier, per {boxName})</label>
+                <input className="input" type="number" step="0.01" placeholder="e.g. 300" value={boxPurchasePrice} onChange={(e) => setBoxPurchasePrice(e.target.value)} />
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <input className="input" type="number" step="0.01" placeholder="Sell price (only if sold whole)" value={boxPrice} onChange={(e) => setBoxPrice(e.target.value)} disabled={!boxSellable} />
               </div>
               <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
                 <input type="checkbox" checked={boxSellable} onChange={(e) => setBoxSellable(e.target.checked)} /> Sellable at this level
@@ -234,10 +239,7 @@ export default function ProductsPage() {
                 <input className="input" placeholder="Name" value={stripName} onChange={(e) => setStripName(e.target.value)} style={{ flex: 1 }} />
                 <input className="input" type="number" placeholder={`per ${boxName}`} value={stripsPerBox} onChange={(e) => setStripsPerBox(e.target.value)} style={{ width: 90 }} />
               </div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-                <input className="input" type="number" step="0.01" placeholder="Sell price" value={stripPrice} onChange={(e) => setStripPrice(e.target.value)} disabled={!stripSellable} />
-                <input className="input" type="number" step="0.01" placeholder="Purchase price" value={stripPurchasePrice} onChange={(e) => setStripPurchasePrice(e.target.value)} />
-              </div>
+              <input className="input" type="number" step="0.01" placeholder="Sell price" value={stripPrice} onChange={(e) => setStripPrice(e.target.value)} disabled={!stripSellable} style={{ marginBottom: 6 }} />
               <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
                 <input type="checkbox" checked={stripSellable} onChange={(e) => setStripSellable(e.target.checked)} /> Sellable at this level
               </label>
@@ -249,10 +251,7 @@ export default function ProductsPage() {
                 <input className="input" placeholder="Name" value={tabletName} onChange={(e) => setTabletName(e.target.value)} style={{ flex: 1 }} />
                 <input className="input" type="number" placeholder={`per ${stripName}`} value={tabletsPerStrip} onChange={(e) => setTabletsPerStrip(e.target.value)} style={{ width: 90 }} />
               </div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-                <input className="input" type="number" step="0.01" placeholder="Sell price" value={tabletPrice} onChange={(e) => setTabletPrice(e.target.value)} disabled={!tabletSellable} />
-                <input className="input" type="number" step="0.01" placeholder="Purchase price" value={tabletPurchasePrice} onChange={(e) => setTabletPurchasePrice(e.target.value)} />
-              </div>
+              <input className="input" type="number" step="0.01" placeholder="Sell price" value={tabletPrice} onChange={(e) => setTabletPrice(e.target.value)} disabled={!tabletSellable} style={{ marginBottom: 6 }} />
               <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
                 <input type="checkbox" checked={tabletSellable} onChange={(e) => setTabletSellable(e.target.checked)} /> Sellable at this level
               </label>
@@ -309,7 +308,8 @@ export default function ProductsPage() {
               <tr>
                 <th>Name</th>
                 <th>Category</th>
-                <th>Packaging (Sell / Cost)</th>
+                <th>Packaging (Sell price)</th>
+                <th>{'Box cost'}</th>
                 <th>Remaining (base units)</th>
                 <th></th>
               </tr>
@@ -317,6 +317,7 @@ export default function ProductsPage() {
             <tbody>
               {products.map((p) => {
                 const remaining = p.batches[0]?.remainingBaseUnits ?? 0
+                const box = p.packagingLevels.find((l) => l.order === 0)
                 return (
                   <tr key={p.id} style={{ opacity: p.archived ? 0.5 : 1 }}>
                     <td>
@@ -326,9 +327,10 @@ export default function ProductsPage() {
                     </td>
                     <td>{p.category?.name ?? '—'}{p.subcategory ? ` / ${p.subcategory.name}` : ''}</td>
                     <td style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                      {p.packagingLevels.map((lvl) =>
-                        `${lvl.name}${lvl.isSellable ? ` (${lvl.price}/${lvl.purchasePrice ?? '—'})` : ''}`
-                      ).join(' → ')}
+                      {p.packagingLevels.map((lvl) => `${lvl.name}${lvl.isSellable ? ` (${lvl.price} Birr)` : ''}`).join(' → ')}
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                      {box?.purchasePrice ? `${box.purchasePrice} Birr / ${box.name}` : '—'}
                     </td>
                     <td>
                       <span className={`badge ${remaining === 0 ? 'badge-danger' : remaining <= 50 ? 'badge-warning' : 'badge-neutral'}`}>
