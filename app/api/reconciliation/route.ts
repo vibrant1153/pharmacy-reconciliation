@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     for (const item of sale.items) {
       const productId = item.productId
       const productName = item.batch.product.name
-      const revenue = item.quantity * Number(item.pricePerStrip)
+      const revenue = item.quantitySold * Number(item.pricePerUnit)
 
       if (!byProduct[productId]) {
         byProduct[productId] = { name: productName, expectedRevenue: 0 }
@@ -41,9 +41,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const existing = await prisma.dailyReconciliation.findUnique({
-    where: { date: start },
-  })
+  const existing = await prisma.dailyReconciliation.findUnique({ where: { date: start } })
 
   const actualCash = existing ? Number(existing.actualCash) : null
   const diff = actualCash !== null ? actualCash - totalExpectedRevenue : null
@@ -52,7 +50,7 @@ export async function GET(req: NextRequest) {
   if (diff !== null) {
     const absDiff = Math.abs(diff)
     if (absDiff === 0) status = 'green'
-    else if (absDiff <= 50) status = 'yellow' // temporary hardcoded threshold; Stage 12 (Settings) makes this configurable
+    else if (absDiff <= 50) status = 'yellow'
     else status = 'red'
   }
 
