@@ -25,11 +25,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     changes.push(`name: ${before.name} → ${body.name.trim()}`)
   }
 
-  if (body.pricePerStrip !== undefined && Number(body.pricePerStrip) !== Number(before.pricePerStrip)) {
-    data.pricePerStrip = body.pricePerStrip
-    changes.push(`price: ${before.pricePerStrip} → ${body.pricePerStrip}`)
-  }
-
   if (body.categoryId !== undefined) {
     data.categoryId = body.categoryId || null
   }
