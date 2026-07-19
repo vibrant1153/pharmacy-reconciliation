@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOwner } from '@/lib/auth'
+import { getSettings } from '@/lib/settings'
 
 export async function GET() {
   const session = await requireOwner()
   if (!session) {
     return NextResponse.json({ success: false, message: 'Owner access required.' }, { status: 403 })
   }
+
+  const settings = await getSettings()
 
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
@@ -25,16 +28,15 @@ export async function GET() {
     include: { batches: { where: { status: 'ACTIVE' } } },
   })
 
-  const lowStockThreshold = 20 // temporary; Stage 12 (Settings) will make this configurable
   const lowStock = products
     .filter((p) => {
       const remaining = p.batches[0]?.remainingBaseUnits ?? 0
-      return remaining > 0 && remaining <= lowStockThreshold
+      return remaining > 0 && remaining <= settings.lowStockThreshold
     })
     .map((p) => ({ name: p.name, remaining: p.batches[0]?.remainingBaseUnits ?? 0 }))
 
   const outOfStock = products
-    .filter((p) => (p.batches[0]?.remainingBaseUnits ?? 0) === 0 && p.batches.length === 0)
+    .filter((p) => p.batches.length === 0)
     .map((p) => ({ name: p.name }))
 
   const recentActivity = todaySales.slice(0, 10).map((sale) => ({
@@ -44,8 +46,6 @@ export async function GET() {
     time: sale.createdAt,
   }))
 
-  const openAlertsCount = await prisma.alert.count({ where: { status: 'OPEN' } })
-
   return NextResponse.json({
     success: true,
     todaySalesCount,
@@ -53,6 +53,5 @@ export async function GET() {
     lowStock,
     outOfStock,
     recentActivity,
-    openAlertsCount,
   })
 }
