@@ -11,8 +11,8 @@ export async function proxy(req: NextRequest) {
   const session = await getIronSession<{ userId?: string; role?: string }>(req, res, sessionOptions)
   const path = req.nextUrl.pathname
 
-  const protectedPaths = ['/dashboard', '/sales', '/products', '/history', '/audit', '/reconciliation', '/alerts', '/profit']
-  const ownerOnlyPaths = ['/dashboard', '/products', '/audit', '/reconciliation', '/alerts', '/profit']
+  const protectedPaths = ['/dashboard', '/sales', '/products', '/history', '/audit', '/reconciliation', '/alerts', '/profit', '/settings']
+  const ownerOnlyPaths = ['/dashboard', '/products', '/audit', '/reconciliation', '/alerts', '/profit', '/settings']
 
   if (!session.userId && protectedPaths.some((p) => path.startsWith(p))) {
     return NextResponse.redirect(new URL('/login', req.url))
@@ -24,5 +24,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/sales/:path*', '/products/:path*', '/history/:path*', '/audit/:path*', '/reconciliation/:path*', '/alerts/:path*', '/profit/:path*'],
+  matcher: ['/dashboard/:path*', '/sales/:path*', '/products/:path*', '/history/:path*', '/audit/:path*', '/reconciliation/:path*', '/alerts/:path*', '/profit/:path*', '/settings/:path*'],
 }
