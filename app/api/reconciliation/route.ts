@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOwner } from '@/lib/auth'
+import { getSettings } from '@/lib/settings'
 
 function getDateBounds(dateStr: string) {
   const start = new Date(dateStr)
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, message: 'Owner access required.' }, { status: 403 })
   }
 
+  const settings = await getSettings()
   const dateParam = req.nextUrl.searchParams.get('date') || new Date().toISOString().split('T')[0]
   const { start, end } = getDateBounds(dateParam)
 
@@ -33,24 +35,22 @@ export async function GET(req: NextRequest) {
       const productName = item.batch.product.name
       const revenue = item.quantitySold * Number(item.pricePerUnit)
 
-      if (!byProduct[productId]) {
-        byProduct[productId] = { name: productName, expectedRevenue: 0 }
-      }
+      if (!byProduct[productId]) byProduct[productId] = { name: productName, expectedRevenue: 0 }
       byProduct[productId].expectedRevenue += revenue
       totalExpectedRevenue += revenue
     }
   }
 
   const existing = await prisma.dailyReconciliation.findUnique({ where: { date: start } })
-
   const actualCash = existing ? Number(existing.actualCash) : null
   const diff = actualCash !== null ? actualCash - totalExpectedRevenue : null
 
+  const threshold = Number(settings.discrepancyThreshold)
   let status: 'green' | 'yellow' | 'red' | 'pending' = 'pending'
   if (diff !== null) {
     const absDiff = Math.abs(diff)
     if (absDiff === 0) status = 'green'
-    else if (absDiff <= 50) status = 'yellow'
+    else if (absDiff <= threshold) status = 'yellow'
     else status = 'red'
   }
 
