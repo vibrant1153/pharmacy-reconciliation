@@ -10,6 +10,7 @@ const ownerLinks = [
   { href: '/reconciliation', label: 'Reconciliation' },
   { href: '/alerts', label: 'Alerts' },
   { href: '/profit', label: 'Profit' },
+  { href: '/settings', label: 'Settings' },
   { href: '/audit', label: 'Audit History' },
 ]
 
