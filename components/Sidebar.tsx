@@ -9,6 +9,7 @@ const ownerLinks = [
   { href: '/history', label: 'Sales History' },
   { href: '/reconciliation', label: 'Reconciliation' },
   { href: '/alerts', label: 'Alerts' },
+  { href: '/profit', label: 'Profit' },
   { href: '/audit', label: 'Audit History' },
 ]
 
