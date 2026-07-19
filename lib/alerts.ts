@@ -1,24 +1,23 @@
 import { prisma } from '@/lib/prisma'
+import { getSettings } from '@/lib/settings'
 
-const LOW_STOCK_THRESHOLD_BASE_UNITS = 20 // temporary; Stage 12 (Settings) will make this configurable
-const DISCREPANCY_THRESHOLD_BIRR = 50 // matches the reconciliation page's threshold
-const STALE_ITEM_MULTIPLIER = 3 // temporary; Stage 12 will make this configurable
-const STALE_ITEM_REMAINING_FRACTION = 0.1 // only checks batches near the end of their stock
+const STALE_ITEM_REMAINING_FRACTION = 0.1 // structural constant, not owner-configurable
 
 export async function runAlertChecks() {
-  await checkLowStock()
-  await checkDiscrepancies()
-  await checkStaleItems()
+  const settings = await getSettings()
+  await checkLowStock(settings.lowStockThreshold)
+  await checkDiscrepancies(Number(settings.discrepancyThreshold))
+  await checkStaleItems(Number(settings.staleItemMultiplier))
 }
 
-async function checkLowStock() {
+async function checkLowStock(threshold: number) {
   const activeBatches = await prisma.batch.findMany({
     where: { status: 'ACTIVE' },
     include: { product: true },
   })
 
   for (const batch of activeBatches) {
-    if (batch.remainingBaseUnits > 0 && batch.remainingBaseUnits <= LOW_STOCK_THRESHOLD_BASE_UNITS) {
+    if (batch.remainingBaseUnits > 0 && batch.remainingBaseUnits <= threshold) {
       const alreadyOpen = await prisma.alert.findFirst({
         where: { type: 'LOW_STOCK', status: 'OPEN', productId: batch.productId },
       })
@@ -36,7 +35,7 @@ async function checkLowStock() {
   }
 }
 
-async function checkDiscrepancies() {
+async function checkDiscrepancies(threshold: number) {
   const recons = await prisma.dailyReconciliation.findMany({
     orderBy: { date: 'desc' },
     take: 14,
@@ -54,7 +53,7 @@ async function checkDiscrepancies() {
     const diff = Number(recon.actualCash) - expectedRevenue
     const dateKey = recon.date.toISOString().split('T')[0]
 
-    if (Math.abs(diff) > DISCREPANCY_THRESHOLD_BIRR) {
+    if (Math.abs(diff) > threshold) {
       const alreadyOpen = await prisma.alert.findFirst({
         where: { type: 'DISCREPANCY', status: 'OPEN', message: { contains: dateKey } },
       })
@@ -70,13 +69,10 @@ async function checkDiscrepancies() {
   }
 }
 
-async function checkStaleItems() {
+async function checkStaleItems(multiplier: number) {
   const activeBatches = await prisma.batch.findMany({
     where: { status: 'ACTIVE' },
-    include: {
-      product: true,
-      saleItems: { include: { sale: true } },
-    },
+    include: { product: true, saleItems: { include: { sale: true } } },
   })
 
   for (const batch of activeBatches) {
@@ -96,7 +92,7 @@ async function checkStaleItems() {
 
     const timeSinceLastSale = Date.now() - saleTimes[saleTimes.length - 1]
 
-    if (timeSinceLastSale > avgGap * STALE_ITEM_MULTIPLIER) {
+    if (timeSinceLastSale > avgGap * multiplier) {
       const alreadyOpen = await prisma.alert.findFirst({
         where: { type: 'STALE_ITEM', status: 'OPEN', batchId: batch.id },
       })
