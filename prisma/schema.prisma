@@ -159,5 +159,14 @@ enum AlertStatus {
   DISMISSED
 }
 
+model Settings {
+  id                   String   @id @default(cuid())
+  lowStockThreshold    Int      @default(20)
+  discrepancyThreshold Decimal  @db.Decimal(10, 2) @default(50)
+  staleItemMultiplier  Decimal  @db.Decimal(4, 2) @default(3)
+  currency             String   @default("Birr")
+  updatedAt            DateTime @updatedAt
+}
+
 
 
